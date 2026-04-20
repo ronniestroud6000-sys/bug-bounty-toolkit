@@ -6,6 +6,14 @@ output/
 # Authorized target list — local only, don't publish targets you're scanning
 output/.authorized-targets
 
+# Your personal list of targets being monitored — do NOT commit
+# (programs.example.txt IS committed as a template)
+programs.txt
+
+# Repomix output — regenerate as needed, don't clutter git history
+repomix-output.md
+repomix-output.xml
+
 # macOS
 .DS_Store
 ._*

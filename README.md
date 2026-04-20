@@ -8,9 +8,16 @@ A complete, opinionated toolkit for running bug bounty programs and selling secu
 bug-bounty-toolkit/
 ├── setup.sh                  # One command to install all the tools
 ├── recon/                    # Automated recon pipelines
+│   ├── full-recon.sh         # Manual deep scan on a single target
+│   ├── quick-recon.sh        # Fast recon variant
+│   ├── content-discovery.sh  # ffuf wrapper for URL fuzzing
+│   ├── daily-recon.sh        # ★ Diff-aware daily monitor (scheduled)
+│   └── triage.sh             # ★ Local jq filters — $0 tokens
+├── scheduling/               # ★ launchd job for automatic daily runs
 ├── templates/                # Client-ready deliverable templates
 ├── learning/                 # Progressive learning path (start here)
 ├── agents/                   # Claude Code agent for bug bounty work
+├── programs.example.txt      # ★ Copy to programs.txt, add your targets
 └── docs/                     # Methodology notes & cheat sheets
 ```
 
@@ -26,6 +33,26 @@ bug-bounty-toolkit/
 # 3. Review findings
 open output/example.com/report.md
 ```
+
+## Daily autopilot (token-frugal)
+
+Want fresh attack surface delivered to you every morning? Set up the scheduler:
+
+```bash
+# 1. Create your target list (authorized programs ONLY)
+cp programs.example.txt programs.txt
+$EDITOR programs.txt
+
+# 2. Install the daily launchd job (fires at 06:00 local time)
+./scheduling/install-schedule.sh
+
+# 3. Every morning, check what's new
+./recon/triage.sh today        # Full daily summary
+./recon/triage.sh high         # Only high/critical findings
+./recon/triage.sh interesting  # Admin panels, staging, APIs
+```
+
+**Cost model:** Scans are pure bash + CLIs, so they cost **$0 tokens**. Claude only gets involved when YOU decide a finding is worth deeper analysis. See [`scheduling/README.md`](scheduling/README.md) for the full architecture.
 
 ## Who this is for
 

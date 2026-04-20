@@ -1,0 +1,29 @@
+# Bug bounty programs to monitor daily.
+# One target domain per line. Lines starting with # are ignored.
+#
+# ⚠️  Only add targets you are EXPLICITLY authorized to test.
+# Read each program's scope page BEFORE adding.
+# Unauthorized testing = illegal (CFAA, Computer Misuse Act).
+#
+# Copy to programs.txt and edit:
+#   cp programs.example.txt programs.txt
+#   $EDITOR programs.txt
+
+# ---- HackerOne public programs (pick a few you actually want to hunt) ----
+# hackerone.com               # HackerOne's own program — https://hackerone.com/security
+# reddit.com                  # Reddit — https://hackerone.com/reddit
+# yelp.com                    # Yelp — https://hackerone.com/yelp
+# automattic.com              # WordPress.com / Tumblr — https://hackerone.com/automattic
+# glassdoor.com               # Glassdoor — https://hackerone.com/glassdoor
+# gitlab.com                  # GitLab — https://hackerone.com/gitlab
+# shopify.com                 # Shopify — https://hackerone.com/shopify (heavily hunted)
+
+# ---- Bugcrowd public programs ----
+# tesla.com                   # Tesla — https://bugcrowd.com/tesla
+# fitbit.com                  # Fitbit — https://bugcrowd.com/fitbit
+
+# ---- Intigriti public programs ----
+# (browse at https://app.intigriti.com/programs)
+
+# ---- Your own systems ----
+# my-own-app.com              # Systems you own or have signed SOW for
