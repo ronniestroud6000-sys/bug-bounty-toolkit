@@ -84,13 +84,20 @@ success "Found $SUB_COUNT subdomains"
 
 # ---- 2. Live host detection + fingerprinting ----------------------------
 log "Probing for live hosts..."
+# Run httpx once in JSON mode, derive live.txt (plain URLs) from the JSONL.
 cat "$OUT/subdomains.txt" \
     | httpx -silent \
             -status-code -title -tech-detect -ip \
-            -o "$OUT/live.txt" \
-            -json -output "$OUT/live.jsonl" \
+            -json \
             -rate-limit 150 \
-            2>/dev/null || true
+            > "$OUT/live.jsonl" 2>/dev/null || true
+
+# Derive a plain-URL list for tools that want one URL per line.
+if [ -s "$OUT/live.jsonl" ]; then
+    jq -r '.url' "$OUT/live.jsonl" 2>/dev/null | sort -u > "$OUT/live.txt" || true
+else
+    : > "$OUT/live.txt"
+fi
 
 LIVE_COUNT=$(wc -l < "$OUT/live.txt" 2>/dev/null | tr -d ' ' || echo 0)
 success "$LIVE_COUNT live hosts"
@@ -178,20 +185,23 @@ ELAPSED=$((END_TIME - START_TIME))
         echo "## Findings by severity"
         echo
         for sev in critical high medium low info; do
-            count=$(grep -c "\"severity\":\"$sev\"" "$OUT/nuclei.jsonl" 2>/dev/null || echo 0)
-            [ "$count" -gt 0 ] && echo "- **${sev^^}:** $count"
+            count=$(grep -Fc "\"severity\":\"$sev\"" "$OUT/nuclei.jsonl" 2>/dev/null) || count=0
+            if [ "$count" -gt 0 ] 2>/dev/null; then
+                SEV_UPPER=$(echo "$sev" | tr '[:lower:]' '[:upper:]')
+                echo "- **${SEV_UPPER}:** $count"
+            fi
         done
         echo
         echo "## Top findings (critical & high)"
         echo
         grep -E '"severity":"(critical|high)"' "$OUT/nuclei.jsonl" 2>/dev/null \
-          | jq -r '"- **\(.info.severity | ascii_upcase)** — [\(.info.name)](\(.matched_at)) · template: `\(.template_id)`"' \
-          | head -50
+          | jq -r '"- **\(.info.severity | ascii_upcase)** — [\(.info.name)](\(."matched-at" // .url)) · template: `\(."template-id")`"' \
+          | head -50 || true
         echo
         echo "## Full nuclei output"
         echo
         echo "\`\`\`"
-        cat "$OUT/nuclei.jsonl" | jq -r '"\(.info.severity | ascii_upcase) | \(.info.name) | \(.matched_at)"' 2>/dev/null | head -200
+        jq -r '"\(.info.severity | ascii_upcase) | \(.info.name) | \(."matched-at" // .url)"' "$OUT/nuclei.jsonl" 2>/dev/null | head -200 || true
         echo "\`\`\`"
     fi
 
