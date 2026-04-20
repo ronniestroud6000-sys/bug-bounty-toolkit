@@ -1,18 +1,45 @@
 # Scheduling
 
-Run `daily-recon.sh` automatically every morning so fresh attack surface is waiting for you over coffee.
+Two-layer automation: free continuous monitoring + cheap surgical analysis.
 
-## Why launchd (and not cron or Claude)
+## The two layers
 
-| Option | Tokens/run | Survives sleep | Survives reboot | Best for |
-|--------|-----------|---------------|-----------------|----------|
-| **launchd** (this) | **$0** | ✅ | ✅ | Daily recon ← |
-| cron | $0 | ⚠️ | ✅ | Linux servers |
-| Claude `CronCreate` | 💰 | depends | depends | When Claude must be in the loop |
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  LAYER 1 — launchd at 06:00 (bash, $0 tokens)                   │
+│  ─────────────────────────────────────────                      │
+│  Runs: recon/daily-recon.sh                                     │
+│  Does: subfinder → diff vs yesterday → httpx → nuclei (medium+) │
+│  Writes: output/daily/YYYY-MM-DD/daily-summary.md               │
+│  Notifies: macOS notification with raw counts                   │
+└─────────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────────┐
+│  LAYER 2 — scheduled-tasks MCP at 07:00 (Claude, ~1¢-20¢/day)   │
+│  ─────────────────────────────────────────────────────────      │
+│  Runs: Claude session with scheduling/claude-analysis-prompt.md │
+│  Short-circuits if zero new subs AND zero findings (~1¢)        │
+│  Otherwise: triages findings, verdicts FPs, writes analysis     │
+│  Writes: output/daily/YYYY-MM-DD/claude-analysis.md             │
+│  Notifies: richer "likely FP / manual dive" notification        │
+└─────────────────────────────────────────────────────────────────┘
+                              ↓
+                      YOU review at 08:00
+```
 
-The daily scan is pure bash + CLIs. Claude is never involved. Tokens are only spent when **you** decide to review findings with Claude's help.
+## Why this architecture
+
+| Option | Tokens/run | Survives sleep | Survives reboot | Purpose |
+|--------|-----------|---------------|-----------------|---------|
+| **launchd** (Layer 1) | **$0** | ✅ | ✅ | Free continuous scanning |
+| **scheduled-tasks MCP** (Layer 2) | **1¢–20¢** | depends | depends | Cheap conditional triage |
+| cron | $0 | ⚠️ macOS-patchy | ✅ | Linux alternative to launchd |
+
+The 6am bash layer is ALWAYS free. The 7am Claude layer short-circuits on boring days (~1¢ to read summary + respond "nothing new") and only spends real tokens when there's something worth analyzing.
 
 ## Install
+
+### Layer 1 — launchd (bash scan at 6am)
 
 ```bash
 # 1. Create your programs.txt (list of authorized targets)
@@ -27,6 +54,22 @@ $EDITOR programs.txt
 ```
 
 That's it. Every morning at 6:00 local time, the script runs, diffs yesterday's assets, and writes a summary.
+
+### Layer 2 — Claude morning triage at 7am
+
+The Claude triage task is registered via Claude Code's `scheduled-tasks` MCP and is specified in [`claude-analysis-prompt.md`](claude-analysis-prompt.md).
+
+To register it (one-time, inside a Claude Code session):
+
+1. Open a Claude Code chat
+2. Ask Claude: `"Register the bug-bounty-morning-triage scheduled task using the prompt in scheduling/claude-analysis-prompt.md to run at 7am daily"`
+
+Claude will create the task via the `mcp__scheduled-tasks__create_scheduled_task` tool. From then on, the task runs every morning at 7am and stores its analysis in `output/daily/YYYY-MM-DD/claude-analysis.md`.
+
+To check it's scheduled: ask Claude to `"list scheduled tasks"`.
+To remove it later: `"delete the bug-bounty-morning-triage scheduled task"`.
+
+**You can skip Layer 2 entirely if you want pure-manual analysis** — just invoke Claude yourself when the 6am notification interests you. `triage.sh` has everything you need for zero-token filtering.
 
 ## Check it's working
 
