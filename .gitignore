@@ -1,0 +1,37 @@
+# Scan outputs — never commit scan results of live targets
+output/
+*.log
+*.tmp
+
+# Authorized target list — local only, don't publish targets you're scanning
+output/.authorized-targets
+
+# macOS
+.DS_Store
+._*
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Environment / secrets
+.env
+.env.*
+*.key
+*.pem
+config.local.*
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Node
+node_modules/
+
+# Archives
+*.zip
+*.tar.gz
